@@ -61,15 +61,6 @@ public class RubiksCube : MonoBehaviour
     }
     private void Update() 
     {                
-        if (!placeHolder.GetComponent<RotateInPlane>().IsRotating)
-        {
-            foreach (GameObject cube in toRotate)
-            {
-                cube.transform.parent = this.transform;
-            }
-            placeHolder.transform.rotation = Quaternion.identity;
-            target.transform.rotation = Quaternion.identity;
-        }
 
         if (Input.touchCount > 0)
         {
@@ -93,7 +84,13 @@ public class RubiksCube : MonoBehaviour
         {            
             return;
         }
+        foreach (GameObject cube in toRotate)
+        {
+            cube.transform.parent = this.transform;
+        }
 
+        placeHolder.transform.rotation = Quaternion.identity;
+        target.transform.rotation = Quaternion.identity;
         
         toRotate = GetPieces(selector, specifier, negative);
         foreach (GameObject cube in toRotate)
@@ -163,22 +160,22 @@ public class RubiksCube : MonoBehaviour
         {
             button = Instantiate(rotateButton, new Vector3(pos, -size, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, false);
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, true);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(pos, numBlocks*size, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, true);
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, false);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(-size, pos, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(numBlocks*size, pos, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
             buttons.Add(button);
         }
         this.transform.localScale *= size;
