@@ -105,6 +105,21 @@ public class RubiksCube : MonoBehaviour
             DetectHit(Input.mousePosition);
         }
 
+        if (automationOn || solverOn)
+        {
+            foreach (GameObject button in buttons)
+            {
+                button.SetActive(false);
+            }
+        }
+        else
+        {
+            foreach (GameObject button in buttons)
+            {
+                button.SetActive(true);
+            }
+        }
+
         MouseSwipe();
         TouchSwipe();
     }
