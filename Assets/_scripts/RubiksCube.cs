@@ -33,6 +33,7 @@ public class RubiksCube : MonoBehaviour
     [SerializeField] private List<GameObject> rubiks;
     [SerializeField] private List<GameObject> toRotate;
     [SerializeField] private List<GameObject> buttons;    
+
     #endregion 
 
     #region Public Variables
@@ -100,6 +101,15 @@ public class RubiksCube : MonoBehaviour
     #endregion
 
     #region Public Methods
+    public void Radomize()
+    {
+
+    }
+
+    public void Solve()
+    {
+        
+    }
     public void RotatePieces(Section selector, float specifier, bool negative = false)
     {
         if (placeHolder.GetComponent<RotateInPlane>().IsRotating || this.GetComponent<RotateInPlane>().IsRotating)
