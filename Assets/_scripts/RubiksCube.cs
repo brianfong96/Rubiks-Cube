@@ -181,10 +181,8 @@ public class RubiksCube : MonoBehaviour
 
     private void SetTarget(GameObject t, Section selector, bool negative)
     {
-        float newX = t.transform.eulerAngles.x;
-        float newY = t.transform.eulerAngles.y;
-        float newZ = t.transform.eulerAngles.z;
-        float angle = (negative) ? -90 : 90;
+        // I hate gimbal locks
+        Vector3 axis = Vector3.right;
         switch (selector)
         {            
             /*
@@ -195,20 +193,19 @@ public class RubiksCube : MonoBehaviour
              *      +x1 +x2 +x3      
              */
             case Section.x:
-                newX += angle;
+                axis = (negative) ? Vector3.left : Vector3.right;
                 break;
             case Section.y:
-                newY += angle;
+                axis = (negative) ? Vector3.down : Vector3.up;
                 break;
             case Section.z:
-                newZ += angle;
+                axis = (negative) ? Vector3.back : Vector3.forward;
                 break;
             default:
                 Debug.LogError("Section state is not defined");
                 break;
         }
-
-        t.transform.eulerAngles = new Vector3(newX,newY,newZ);
+        t.transform.rotation = Quaternion.AngleAxis(90, axis);
     }
 
     private void RotateAll(Section selector, bool negative)
