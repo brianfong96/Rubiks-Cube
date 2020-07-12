@@ -27,12 +27,12 @@ public class RubiksCube : MonoBehaviour
     [SerializeField] private GameObject rotateButton = null;
     [SerializeField] private GameObject placeHolder = null;
     [SerializeField] private GameObject target = null;
+    [SerializeField] private GameObject temp = null;
     [SerializeField] private GameObject completeTarget = null;
     [SerializeField] private GameObject buttonParent = null;
     [SerializeField] private List<GameObject> rubiks;
     [SerializeField] private List<GameObject> toRotate;
-    [SerializeField] private List<GameObject> buttons;
-    
+    [SerializeField] private List<GameObject> buttons;    
     #endregion 
 
     #region Public Variables
@@ -69,11 +69,17 @@ public class RubiksCube : MonoBehaviour
         target.name = "Target";
         completeTarget = Instantiate(rotator, sharedPos, Quaternion.identity);
         completeTarget.name = "CompleteTarget";
+        temp = Instantiate(rotator, sharedPos, Quaternion.identity);
+        temp.name = "Temp";
         CreateCube();    
         CreateButtons();    
     }
     private void Update() 
-    {                
+    {      
+        if (!placeHolder.GetComponent<RotateInPlane>().IsRotating && !this.GetComponent<RotateInPlane>().IsRotating)
+        {            
+            ResetPlaceHolder();
+        }
 
         if (Input.touchCount > 0)
         {
@@ -100,8 +106,6 @@ public class RubiksCube : MonoBehaviour
         {            
             return;
         }
-        ResetPlaceHolder();
-        
         toRotate = GetPieces(selector, specifier, negative);
         foreach (GameObject cube in toRotate)
         {
@@ -148,7 +152,7 @@ public class RubiksCube : MonoBehaviour
     {
         GameObject button;
         buttons = new List<GameObject>();
-        buttonParent = new GameObject("button Parent");
+        buttonParent = new GameObject("Button Parent");
         buttonParent.transform.position = this.transform.position;
         for (int pos = 0; pos < numBlocks; pos++)
         {
@@ -206,6 +210,7 @@ public class RubiksCube : MonoBehaviour
                 break;
         }
         t.transform.rotation = Quaternion.AngleAxis(90, axis);
+        return;
     }
 
     private void RotateAll(Section selector, bool negative)
@@ -214,22 +219,26 @@ public class RubiksCube : MonoBehaviour
         {            
             return;
         }
-        ResetPlaceHolder();
         SetTarget(completeTarget, selector, negative);
         this.GetComponent<RotateInPlane>().RotateCubes(completeTarget.transform);
     }
 
     private void ResetPlaceHolder()
     {
-        foreach (GameObject cube in toRotate)
+        foreach (GameObject cube in rubiks)
         {
-            cube.transform.parent = this.transform;
+            cube.transform.parent = temp.transform;
         }
         
         placeHolder.transform.rotation = Quaternion.identity;
         target.transform.rotation = Quaternion.identity;
         completeTarget.transform.rotation = Quaternion.identity;
+        this.transform.rotation = Quaternion.identity;
 
+        foreach (GameObject cube in rubiks)
+        {
+            cube.transform.parent = this.transform;
+        }
 
         return;
     }
