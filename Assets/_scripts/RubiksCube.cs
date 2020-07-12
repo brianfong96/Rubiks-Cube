@@ -27,6 +27,7 @@ public class RubiksCube : MonoBehaviour
     [SerializeField] private GameObject target = null;
     [SerializeField] private List<GameObject> rubiks;
     [SerializeField] private List<GameObject> toRotate;
+    [SerializeField] private List<GameObject> buttons;
     
     #endregion 
 
@@ -64,6 +65,19 @@ public class RubiksCube : MonoBehaviour
             }
             placeHolder.transform.rotation = Quaternion.identity;
             target.transform.rotation = Quaternion.identity;
+        }
+
+        if (Input.touchCount > 0)
+        {
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                DetectHit(i);
+            }
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            DetectHit(0);
         }
     }
     #endregion
@@ -139,6 +153,30 @@ public class RubiksCube : MonoBehaviour
                 }                
             }
         }
+        GameObject button;
+
+        for (int pos = 0; pos < numBlocks; pos++)
+        {
+            button = Instantiate(rotateButton, new Vector3(pos, -size, 0), Quaternion.identity);
+            button.transform.parent = this.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, false);
+            buttons.Add(button);
+
+            button = Instantiate(rotateButton, new Vector3(pos, numBlocks*size, 0), Quaternion.identity);
+            button.transform.parent = this.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, true);
+            buttons.Add(button);
+
+            button = Instantiate(rotateButton, new Vector3(-size, pos, 0), Quaternion.identity);
+            button.transform.parent = this.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
+            buttons.Add(button);
+
+            button = Instantiate(rotateButton, new Vector3(numBlocks*size, pos, 0), Quaternion.identity);
+            button.transform.parent = this.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
+            buttons.Add(button);
+        }
         this.transform.localScale *= size;
         this.transform.position += new Vector3(posOffset, 0, 0);
     }
@@ -182,5 +220,15 @@ public class RubiksCube : MonoBehaviour
         }
         return pieces;
     }    
+
+    private void DetectHit(int i)
+    {
+        RaycastHit hit;
+        Ray ray = Camera.main.ScreenPointToRay(Input.GetTouch(i).position);
+        if (Physics.Raycast(ray, out hit) && hit.collider)
+        {
+            hit.collider.gameObject.GetComponent<RotateOnClick>().Hit();
+        }
+    }
     #endregion
 }
