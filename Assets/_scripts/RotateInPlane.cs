@@ -11,22 +11,25 @@ public class RotateInPlane : MonoBehaviour
 {
     #region Private Variables
     [SerializeField] private bool isRotating = false;
-    [SerializeField] private Vector3 point1;
-    [SerializeField] private Vector3 point2;
-    [SerializeField] private float rotationSpeed = 0.075f;
+    [SerializeField] private float rotationSpeed = 0.05f;
     [SerializeField] private Transform from;
     [SerializeField] private Transform to;
     #endregion
+    
+    #region Public Variable
+    public bool IsRotating 
+    {
+        get {return isRotating;}
+    }
+    #endregion
 
     #region Public Methods
-    public void RotateCubes(Vector3 p1, Vector3 p2, Transform destination)
+    public void RotateCubes(Transform dest)
     {
+        to = dest;
         isRotating = true;
-        point1 = p1;
-        point2 = p2;
-        to = destination;
-
         StartCoroutine(Rotate());
+        return;
     }
     #endregion
 
