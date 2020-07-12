@@ -39,6 +39,10 @@ public class RubiksCube : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (!Instance)
+        {
+            Instance = this;
+        }
         if (!subCube)
         {
             Debug.LogError("Missing subCube prefab on SpawnCube.cs. Please Attach in editor");
@@ -71,13 +75,13 @@ public class RubiksCube : MonoBehaviour
         {
             for (int i = 0; i < Input.touchCount; i++)
             {
-                DetectHit(i);
+                DetectHit(Input.GetTouch(i).position);
             }
         }
 
         if (Input.GetMouseButtonDown(0))
         {
-            DetectHit(0);
+            DetectHit(Input.mousePosition);
         }
     }
     #endregion
@@ -221,12 +225,13 @@ public class RubiksCube : MonoBehaviour
         return pieces;
     }    
 
-    private void DetectHit(int i)
+    private void DetectHit(Vector3 i)
     {
         RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(Input.GetTouch(i).position);
+        Ray ray = Camera.main.ScreenPointToRay(i);
         if (Physics.Raycast(ray, out hit) && hit.collider)
         {
+            Debug.Log(hit.collider.gameObject.name);
             hit.collider.gameObject.GetComponent<RotateOnClick>().Hit();
         }
     }
