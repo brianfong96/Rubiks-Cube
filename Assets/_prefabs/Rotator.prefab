@@ -44,6 +44,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isRotating: 0
-  rotationSpeed: 0.01
+  rotationSpeed: 0.03
   from: {fileID: 0}
   to: {fileID: 0}
