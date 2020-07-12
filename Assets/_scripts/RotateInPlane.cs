@@ -24,8 +24,12 @@ public class RotateInPlane : MonoBehaviour
     #endregion
 
     #region Public Methods
-    public void RotateCubes(Transform dest)
+    public void RotateCubes(Transform dest, float speed = 0)
     {
+        if (speed > 0 && speed < 1)
+        {
+            rotationSpeed = speed;
+        }
         to = dest;
         isRotating = true;
         StartCoroutine(Rotate());

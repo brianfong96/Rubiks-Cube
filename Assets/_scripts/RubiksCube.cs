@@ -26,6 +26,8 @@ public class RubiksCube : MonoBehaviour
     [SerializeField] private float size = 1;
     [SerializeField] private float posOffset;
     [SerializeField] private float center;
+    [SerializeField] private float rotateSpeed = 0.075f;
+    [SerializeField] private float waitTime = 0.2f;
     [SerializeField] private GameObject subCube = null;
     [SerializeField] private GameObject rotator = null;
     [SerializeField] private GameObject rotateButton = null;
@@ -136,7 +138,7 @@ public class RubiksCube : MonoBehaviour
             cube.transform.parent = placeHolder.transform;
         }
         SetTarget(target, selector, negative);
-        placeHolder.GetComponent<RotateInPlane>().RotateCubes(target.transform);
+        placeHolder.GetComponent<RotateInPlane>().RotateCubes(target.transform, rotateSpeed);
         return;
     }
     #endregion
@@ -250,7 +252,7 @@ public class RubiksCube : MonoBehaviour
             return;
         }
         SetTarget(completeTarget, selector, negative);
-        this.GetComponent<RotateInPlane>().RotateCubes(completeTarget.transform);
+        this.GetComponent<RotateInPlane>().RotateCubes(completeTarget.transform, rotateSpeed);
     }
 
     private void ResetPlaceHolder()
@@ -317,10 +319,39 @@ public class RubiksCube : MonoBehaviour
     {
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(rayPos);
-        if (Physics.Raycast(ray, out hit) && hit.collider && hit.collider.tag == "Button")
+        if (Physics.Raycast(ray, out hit) && hit.collider && hit.collider.tag == "Button" && !automationOn)
         {
             Debug.Log(hit.collider.gameObject.name);
             hit.collider.gameObject.GetComponent<RotateOnClick>().Hit();
+        }
+    }
+
+    private void Swipe()
+    {
+        currentSwipe = new Vector3(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
+        
+        //normalize the 2d vector
+        currentSwipe.Normalize();
+
+        //swipe upwards
+        if(currentSwipe.y > 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f && !automationOn)
+        {            
+            RotateAll(Section.x, false);
+        }
+        //swipe down
+        if(currentSwipe.y < 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f && !automationOn)
+        {
+            RotateAll(Section.x, true);
+        }
+        //swipe left
+        if(currentSwipe.x < 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f && !automationOn)
+        {
+            RotateAll(Section.y, false);
+        }
+        //swipe right
+        if(currentSwipe.x > 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f && !automationOn)
+        {
+            RotateAll(Section.y, true);
         }
     }
     
@@ -340,35 +371,7 @@ public class RubiksCube : MonoBehaviour
                 secondPressPos = new Vector2(t.position.x,t.position.y);
                             
                 //create vector from the two points
-                currentSwipe = new Vector3(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
-                
-                //normalize the 2d vector
-                currentSwipe.Normalize();
-    
-                //swipe upwards
-                if(currentSwipe.y > 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
-                {
-                    Debug.Log("up swipe");
-                    RotateAll(Section.x, false);
-                }
-                //swipe down
-                if(currentSwipe.y < 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
-                {
-                    Debug.Log("down swipe");
-                    RotateAll(Section.x, true);
-                }
-                //swipe left
-                if(currentSwipe.x < 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
-                {
-                    RotateAll(Section.y, false);
-                    Debug.Log("left swipe");
-                }
-                //swipe right
-                if(currentSwipe.x > 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
-                {
-                    RotateAll(Section.y, true);
-                    Debug.Log("right swipe");
-                }
+                Swipe();
             }
         }
     }
@@ -385,36 +388,7 @@ public class RubiksCube : MonoBehaviour
                 //save ended touch 2d point
             secondPressPos = new Vector2(Input.mousePosition.x,Input.mousePosition.y);
         
-                //create vector from the two points
-            currentSwipe = new Vector2(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
-            
-            //normalize the 2d vector
-            currentSwipe.Normalize();
-    
-            //swipe upwards
-            if(currentSwipe.y > 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
-            {
-                Debug.Log("up swipe");
-                RotateAll(Section.x, false);
-            }
-            //swipe down
-            if(currentSwipe.y < 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
-            {
-                Debug.Log("down swipe");
-                RotateAll(Section.x, true);
-            }
-            //swipe left
-            if(currentSwipe.x < 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
-            {
-                RotateAll(Section.y, false);
-                Debug.Log("left swipe");
-            }
-            //swipe right
-            if(currentSwipe.x > 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
-            {
-                RotateAll(Section.y, true);
-                Debug.Log("right swipe");
-            }
+            Swipe();
         }
     }
     #endregion
@@ -442,7 +416,7 @@ public class RubiksCube : MonoBehaviour
                 RotatePieces(newSection, spec, negative);
             }
             // Needs buffer time or it'll break
-            yield return new WaitForSeconds(0.15f);
+            yield return new WaitForSeconds(waitTime);
         }
         automationOn = false;
         yield return null;

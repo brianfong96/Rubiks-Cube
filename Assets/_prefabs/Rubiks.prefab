@@ -44,14 +44,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b5455282bb3e9c4ea6d8c2f49b483e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  automationOn: 0
   numBlocks: 3
+  minIterations: 20
+  maxIterations: 50
+  iterations: 0
   size: 1
+  posOffset: 0
+  center: 0
+  rotateSpeed: 0.075
+  waitTime: 0.3
   subCube: {fileID: 335072896896912067, guid: 6c98c1101c9af9047a97fadff58ce178, type: 3}
   rotator: {fileID: 3975862930169345432, guid: 6bd6317c0dd9b614f8535e07c51fe5bd, type: 3}
   rotateButton: {fileID: 2335733619081856942, guid: 4afc5caebc4abf8468d38c395d964e88,
     type: 3}
   placeHolder: {fileID: 0}
   target: {fileID: 0}
+  temp: {fileID: 0}
+  completeTarget: {fileID: 0}
+  buttonParent: {fileID: 0}
   rubiks: []
   toRotate: []
   buttons: []
@@ -68,6 +79,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isRotating: 0
-  rotationSpeed: 0.05
+  rotationSpeed: 0.1
   from: {fileID: 0}
   to: {fileID: 0}
