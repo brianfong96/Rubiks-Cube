@@ -17,8 +17,12 @@ public class RubiksCube : MonoBehaviour
         z
     }
     #endregion
-    #region Private Serialized Variables    
+    #region Private Serialized Variables  
+    [SerializeField] private bool automationOn = false;  
     [SerializeField] private int numBlocks = 3;
+    [SerializeField] private int minIterations = 20;
+    [SerializeField] private int maxIterations = 50;
+    [SerializeField] private int iterations;
     [SerializeField] private float size = 1;
     [SerializeField] private float posOffset;
     [SerializeField] private float center;
@@ -77,7 +81,7 @@ public class RubiksCube : MonoBehaviour
     }
     private void Update() 
     {      
-        if (!placeHolder.GetComponent<RotateInPlane>().IsRotating && !this.GetComponent<RotateInPlane>().IsRotating)
+        if (!Busy())
         {            
             ResetPlaceHolder();
         }
@@ -101,18 +105,28 @@ public class RubiksCube : MonoBehaviour
     #endregion
 
     #region Public Methods
-    public void Radomize()
+    public void Randomize()
     {
-
+        if (Busy() || automationOn)
+        {
+            return;
+        }
+        automationOn = true;
+        iterations = Random.Range(minIterations, maxIterations);
+        StartCoroutine(RandomCommands());
     }
 
     public void Solve()
     {
-        
+        foreach (GameObject cube in rubiks)
+        {
+            Destroy(cube);
+        }
+        CreateCube();
     }
     public void RotatePieces(Section selector, float specifier, bool negative = false)
     {
-        if (placeHolder.GetComponent<RotateInPlane>().IsRotating || this.GetComponent<RotateInPlane>().IsRotating)
+        if (Busy())
         {            
             return;
         }
@@ -136,6 +150,7 @@ public class RubiksCube : MonoBehaviour
         float startPos = 0;
 
         posOffset = - maxRange / numBlocks;
+        this.transform.localScale = Vector3.one;
         this.transform.position = new Vector3(center, center, center);
         for (int z = 0; z < numBlocks; z++)
         {
@@ -156,6 +171,11 @@ public class RubiksCube : MonoBehaviour
         
         this.transform.localScale *= size;
         this.transform.position += new Vector3(posOffset, 0, 0);        
+    }
+
+    bool Busy()
+    {
+        return (placeHolder.GetComponent<RotateInPlane>().IsRotating || this.GetComponent<RotateInPlane>().IsRotating);
     }
 
     private void CreateButtons()
@@ -397,5 +417,34 @@ public class RubiksCube : MonoBehaviour
             }
         }
     }
+    #endregion
+
+    #region Coroutines
+    IEnumerator RandomCommands()
+    {        
+        for (int i = 0; i < iterations; i++)
+        {
+            while (Busy())
+            {            
+                yield return null;
+            }
+            Section newSection = (Section)Random.Range(0,3);
+            int specifier = Random.Range(0,numBlocks+1);
+            float spec = 0.0f + specifier;
+            int neg = Random.Range(0,2);
+            bool negative = (neg == 0);
+            if (specifier == numBlocks)
+            {
+                RotateAll(newSection, negative);
+            }
+            else
+            {
+                RotatePieces(newSection, spec, negative);
+            }
+            yield return null;
+        }
+        automationOn = false;
+        yield return null;
+    } 
     #endregion
 }
