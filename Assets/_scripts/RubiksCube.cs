@@ -441,7 +441,8 @@ public class RubiksCube : MonoBehaviour
             {
                 RotatePieces(newSection, spec, negative);
             }
-            yield return null;
+            // Needs buffer time or it'll break
+            yield return new WaitForSeconds(0.15f);
         }
         automationOn = false;
         yield return null;
