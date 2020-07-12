@@ -16,9 +16,11 @@ public class RubiksCube : MonoBehaviour
         y,
         z
     }
+    
     #endregion
     #region Private Serialized Variables  
     [SerializeField] private bool automationOn = false;  
+    [SerializeField] private bool solverOn = false;
     [SerializeField] private int numBlocks = 3;
     [SerializeField] private int minIterations = 20;
     [SerializeField] private int maxIterations = 50;
@@ -39,6 +41,7 @@ public class RubiksCube : MonoBehaviour
     [SerializeField] private List<GameObject> rubiks;
     [SerializeField] private List<GameObject> toRotate;
     [SerializeField] private List<GameObject> buttons;    
+    [SerializeField] private Stack<Commands> commands;
 
     #endregion 
 
@@ -68,6 +71,7 @@ public class RubiksCube : MonoBehaviour
         {
             numBlocks = 2;
         }
+        commands = new Stack<Commands>();
         center = (numBlocks-1)/2*size;
         Vector3 sharedPos = new Vector3(0, center, center);
         placeHolder = Instantiate(rotator, sharedPos, Quaternion.identity);
@@ -109,7 +113,7 @@ public class RubiksCube : MonoBehaviour
     #region Public Methods
     public void Randomize()
     {
-        if (Busy() || automationOn)
+        if (Busy() || automationOn || solverOn)
         {
             return;
         }
@@ -120,11 +124,12 @@ public class RubiksCube : MonoBehaviour
 
     public void Solve()
     {
-        foreach (GameObject cube in rubiks)
+        if (Busy() || automationOn || solverOn)
         {
-            Destroy(cube);
+            return;
         }
-        CreateCube();
+        solverOn = true;
+        StartCoroutine(SolveCommands());
     }
     public void RotatePieces(Section selector, float specifier, bool negative = false)
     {
@@ -139,6 +144,10 @@ public class RubiksCube : MonoBehaviour
         }
         SetTarget(target, selector, negative);
         placeHolder.GetComponent<RotateInPlane>().RotateCubes(target.transform, rotateSpeed);
+        if (!solverOn)
+        {
+            commands.Push(new Commands("RotatePieces", selector, specifier, !negative));
+        }        
         return;
     }
     #endregion
@@ -253,6 +262,10 @@ public class RubiksCube : MonoBehaviour
         }
         SetTarget(completeTarget, selector, negative);
         this.GetComponent<RotateInPlane>().RotateCubes(completeTarget.transform, rotateSpeed);
+        if (!solverOn)
+        {
+            commands.Push(new Commands("RotateAll", selector, -1f, !negative));
+        }        
     }
 
     private void ResetPlaceHolder()
@@ -421,5 +434,25 @@ public class RubiksCube : MonoBehaviour
         automationOn = false;
         yield return null;
     } 
+
+    IEnumerator SolveCommands()
+    {
+        while (commands.Count > 0)
+        {
+            Commands command = commands.Pop();
+            if (command.Command == "RotatePieces")
+            {
+                RotatePieces(command.Section, command.Specifier, command.Negative);
+            }
+            else
+            {
+                RotateAll(command.Section, command.Negative);
+            }
+            // Needs buffer time or it'll break
+            yield return new WaitForSeconds(waitTime);            
+        }
+        yield return null;
+        solverOn = false;
+    }
     #endregion
 }
