@@ -20,11 +20,15 @@ public class RubiksCube : MonoBehaviour
     #region Private Serialized Variables    
     [SerializeField] private int numBlocks = 3;
     [SerializeField] private float size = 1;
+    [SerializeField] private float posOffset;
+    [SerializeField] private float center;
     [SerializeField] private GameObject subCube = null;
     [SerializeField] private GameObject rotator = null;
     [SerializeField] private GameObject rotateButton = null;
     [SerializeField] private GameObject placeHolder = null;
     [SerializeField] private GameObject target = null;
+    [SerializeField] private GameObject completeTarget = null;
+    [SerializeField] private GameObject buttonParent = null;
     [SerializeField] private List<GameObject> rubiks;
     [SerializeField] private List<GameObject> toRotate;
     [SerializeField] private List<GameObject> buttons;
@@ -33,6 +37,12 @@ public class RubiksCube : MonoBehaviour
 
     #region Public Variables
     public static RubiksCube Instance;
+    #endregion
+
+    #region Private Variables
+    Vector2 firstPressPos;
+    Vector2 secondPressPos;
+    Vector2 currentSwipe;
     #endregion
 
     #region Unity Callbacks
@@ -51,13 +61,16 @@ public class RubiksCube : MonoBehaviour
         {
             numBlocks = 2;
         }
-        float center = (numBlocks-1)/2*size;
+        center = (numBlocks-1)/2*size;
         Vector3 sharedPos = new Vector3(0, center, center);
         placeHolder = Instantiate(rotator, sharedPos, Quaternion.identity);
         placeHolder.name = "PlaceHolder";
         target = Instantiate(rotator, sharedPos, Quaternion.identity);
         target.name = "Target";
-        CreateCube();        
+        completeTarget = Instantiate(rotator, sharedPos, Quaternion.identity);
+        completeTarget.name = "CompleteTarget";
+        CreateCube();    
+        CreateButtons();    
     }
     private void Update() 
     {                
@@ -74,32 +87,103 @@ public class RubiksCube : MonoBehaviour
         {
             DetectHit(Input.mousePosition);
         }
+
+        MouseSwipe();
+        TouchSwipe();
     }
     #endregion
 
     #region Public Methods
     public void RotatePieces(Section selector, float specifier, bool negative = false)
     {
-        if (placeHolder.GetComponent<RotateInPlane>().IsRotating)
+        if (placeHolder.GetComponent<RotateInPlane>().IsRotating || this.GetComponent<RotateInPlane>().IsRotating)
         {            
             return;
         }
-        foreach (GameObject cube in toRotate)
-        {
-            cube.transform.parent = this.transform;
-        }
-
-        placeHolder.transform.rotation = Quaternion.identity;
-        target.transform.rotation = Quaternion.identity;
+        ResetPlaceHolder();
         
         toRotate = GetPieces(selector, specifier, negative);
         foreach (GameObject cube in toRotate)
         {
             cube.transform.parent = placeHolder.transform;
         }
-        float newX = target.transform.eulerAngles.x;
-        float newY = target.transform.eulerAngles.y;
-        float newZ = target.transform.eulerAngles.z;
+        SetTarget(target, selector, negative);
+        placeHolder.GetComponent<RotateInPlane>().RotateCubes(target.transform);
+        return;
+    }
+    #endregion
+
+    #region Private Methods
+    void CreateCube()
+    {
+        rubiks = new List<GameObject>();
+
+        float maxRange = numBlocks * size;                
+        float startPos = 0;
+
+        posOffset = - maxRange / numBlocks;
+        this.transform.position = new Vector3(center, center, center);
+        for (int z = 0; z < numBlocks; z++)
+        {
+            for (int y = 0; y < numBlocks; y++)
+            {
+                for (int x = 0; x < numBlocks; x++)
+                {
+                    float xPos = startPos + x;
+                    float yPos = startPos + y;
+                    float zPos = startPos + z;
+                    GameObject newSub = Instantiate(subCube, new Vector3(xPos, yPos, zPos), Quaternion.identity);
+                    newSub.name = xPos.ToString()+yPos.ToString()+zPos.ToString();
+                    newSub.transform.parent = this.transform;
+                    rubiks.Add(newSub);
+                }                
+            }
+        }
+        
+        this.transform.localScale *= size;
+        this.transform.position += new Vector3(posOffset, 0, 0);        
+    }
+
+    private void CreateButtons()
+    {
+        GameObject button;
+        buttons = new List<GameObject>();
+        buttonParent = new GameObject("button Parent");
+        buttonParent.transform.position = this.transform.position;
+        for (int pos = 0; pos < numBlocks; pos++)
+        {
+            // Rotate Down
+            button = Instantiate(rotateButton, new Vector3(pos, -size, 0), Quaternion.identity);
+            button.transform.parent = buttonParent.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, true);
+            buttons.Add(button);
+
+            // Rotate Up
+            button = Instantiate(rotateButton, new Vector3(pos, numBlocks*size, 0), Quaternion.identity);
+            button.transform.parent = buttonParent.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, false);
+            buttons.Add(button);
+
+            // Rotate Left
+            button = Instantiate(rotateButton, new Vector3(-size, pos, 0), Quaternion.identity);
+            button.transform.parent = buttonParent.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
+            buttons.Add(button);
+
+            // Rotate Right
+            button = Instantiate(rotateButton, new Vector3(numBlocks*size, pos, 0), Quaternion.identity);
+            button.transform.parent = buttonParent.transform;
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
+            buttons.Add(button);
+        }
+        buttonParent.transform.position += new Vector3(posOffset, 0, 0);        
+    }
+
+    private void SetTarget(GameObject t, Section selector, bool negative)
+    {
+        float newX = t.transform.eulerAngles.x;
+        float newY = t.transform.eulerAngles.y;
+        float newZ = t.transform.eulerAngles.z;
         float angle = (negative) ? -90 : 90;
         switch (selector)
         {            
@@ -124,62 +208,33 @@ public class RubiksCube : MonoBehaviour
                 break;
         }
 
-        target.transform.eulerAngles = new Vector3(newX,newY,newZ);        
-        placeHolder.GetComponent<RotateInPlane>().RotateCubes(target.transform);
-        return;
+        t.transform.eulerAngles = new Vector3(newX,newY,newZ);
     }
-    #endregion
 
-    #region Private Methods
-    void CreateCube()
+    private void RotateAll(Section selector, bool negative)
     {
-        rubiks = new List<GameObject>();
-
-        float maxRange = numBlocks * size;        
-        float posOffset = - maxRange / numBlocks;
-        float startPos = 0;
-        for (int z = 0; z < numBlocks; z++)
-        {
-            for (int y = 0; y < numBlocks; y++)
-            {
-                for (int x = 0; x < numBlocks; x++)
-                {
-                    float xPos = startPos + x;
-                    float yPos = startPos + y;
-                    float zPos = startPos + z;
-                    GameObject newSub = Instantiate(subCube, new Vector3(xPos, yPos, zPos), Quaternion.identity);
-                    newSub.name = xPos.ToString()+yPos.ToString()+zPos.ToString();
-                    newSub.transform.parent = this.transform;
-                    rubiks.Add(newSub);
-                }                
-            }
+        if (placeHolder.GetComponent<RotateInPlane>().IsRotating || this.GetComponent<RotateInPlane>().IsRotating)
+        {            
+            return;
         }
-        GameObject button;
+        ResetPlaceHolder();
+        SetTarget(completeTarget, selector, negative);
+        this.GetComponent<RotateInPlane>().RotateCubes(completeTarget.transform);
+    }
 
-        for (int pos = 0; pos < numBlocks; pos++)
+    private void ResetPlaceHolder()
+    {
+        foreach (GameObject cube in toRotate)
         {
-            button = Instantiate(rotateButton, new Vector3(pos, -size, 0), Quaternion.identity);
-            button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, true);
-            buttons.Add(button);
-
-            button = Instantiate(rotateButton, new Vector3(pos, numBlocks*size, 0), Quaternion.identity);
-            button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, false);
-            buttons.Add(button);
-
-            button = Instantiate(rotateButton, new Vector3(-size, pos, 0), Quaternion.identity);
-            button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
-            buttons.Add(button);
-
-            button = Instantiate(rotateButton, new Vector3(numBlocks*size, pos, 0), Quaternion.identity);
-            button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
-            buttons.Add(button);
+            cube.transform.parent = this.transform;
         }
-        this.transform.localScale *= size;
-        this.transform.position += new Vector3(posOffset, 0, 0);
+        
+        placeHolder.transform.rotation = Quaternion.identity;
+        target.transform.rotation = Quaternion.identity;
+        completeTarget.transform.rotation = Quaternion.identity;
+
+
+        return;
     }
 
     private List<GameObject> GetPieces(Section selector, float specifier, bool negative = false)
@@ -222,14 +277,108 @@ public class RubiksCube : MonoBehaviour
         return pieces;
     }    
 
-    private void DetectHit(Vector3 i)
+    private void DetectHit(Vector3 rayPos)
     {
         RaycastHit hit;
-        Ray ray = Camera.main.ScreenPointToRay(i);
-        if (Physics.Raycast(ray, out hit) && hit.collider)
+        Ray ray = Camera.main.ScreenPointToRay(rayPos);
+        if (Physics.Raycast(ray, out hit) && hit.collider && hit.collider.tag == "Button")
         {
             Debug.Log(hit.collider.gameObject.name);
             hit.collider.gameObject.GetComponent<RotateOnClick>().Hit();
+        }
+    }
+    
+    private void TouchSwipe()
+    {
+        if(Input.touches.Length > 0)
+        {
+            Touch t = Input.GetTouch(0);
+            if(t.phase == TouchPhase.Began)
+            {
+                //save began touch 2d point
+                firstPressPos = new Vector2(t.position.x,t.position.y);
+            }
+            if(t.phase == TouchPhase.Ended)
+            {
+                //save ended touch 2d point
+                secondPressPos = new Vector2(t.position.x,t.position.y);
+                            
+                //create vector from the two points
+                currentSwipe = new Vector3(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
+                
+                //normalize the 2d vector
+                currentSwipe.Normalize();
+    
+                //swipe upwards
+                if(currentSwipe.y > 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
+                {
+                    Debug.Log("up swipe");
+                    RotateAll(Section.x, false);
+                }
+                //swipe down
+                if(currentSwipe.y < 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
+                {
+                    Debug.Log("down swipe");
+                    RotateAll(Section.x, true);
+                }
+                //swipe left
+                if(currentSwipe.x < 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
+                {
+                    RotateAll(Section.y, false);
+                    Debug.Log("left swipe");
+                }
+                //swipe right
+                if(currentSwipe.x > 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
+                {
+                    RotateAll(Section.y, true);
+                    Debug.Log("right swipe");
+                }
+            }
+        }
+    }
+
+    public void MouseSwipe()
+    {
+        if(Input.GetMouseButtonDown(0))
+        {
+            //save began touch 2d point
+            firstPressPos = new Vector2(Input.mousePosition.x,Input.mousePosition.y);
+        }
+        if(Input.GetMouseButtonUp(0))
+        {
+                //save ended touch 2d point
+            secondPressPos = new Vector2(Input.mousePosition.x,Input.mousePosition.y);
+        
+                //create vector from the two points
+            currentSwipe = new Vector2(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
+            
+            //normalize the 2d vector
+            currentSwipe.Normalize();
+    
+            //swipe upwards
+            if(currentSwipe.y > 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
+            {
+                Debug.Log("up swipe");
+                RotateAll(Section.x, false);
+            }
+            //swipe down
+            if(currentSwipe.y < 0 && currentSwipe.x > -0.5f && currentSwipe.x < 0.5f)
+            {
+                Debug.Log("down swipe");
+                RotateAll(Section.x, true);
+            }
+            //swipe left
+            if(currentSwipe.x < 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
+            {
+                RotateAll(Section.y, false);
+                Debug.Log("left swipe");
+            }
+            //swipe right
+            if(currentSwipe.x > 0 && currentSwipe.y > -0.5f && currentSwipe.y < 0.5f)
+            {
+                RotateAll(Section.y, true);
+                Debug.Log("right swipe");
+            }
         }
     }
     #endregion

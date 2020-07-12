@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: -7556664356410735414}
   m_Layer: 0
   m_Name: Rotate Button
-  m_TagString: Untagged
+  m_TagString: Button
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -107,3 +107,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rubik: {fileID: 1619150292474702193, guid: 397693544a964c54eb6b671552a09a8f, type: 3}
+  sector: 0
+  specifier: 0
+  negative: 0
