@@ -52,7 +52,7 @@ public class RubiksCube : MonoBehaviour
             numBlocks = 2;
         }
         float center = (numBlocks-1)/2*size;
-        Vector3 sharedPos = new Vector3(center, center, center);
+        Vector3 sharedPos = new Vector3(0, center, center);
         placeHolder = Instantiate(rotator, sharedPos, Quaternion.identity);
         placeHolder.name = "PlaceHolder";
         target = Instantiate(rotator, sharedPos, Quaternion.identity);
@@ -78,7 +78,7 @@ public class RubiksCube : MonoBehaviour
     #endregion
 
     #region Public Methods
-    public void RotatePieces(Section selector, int specifier, bool negative = false)
+    public void RotatePieces(Section selector, float specifier, bool negative = false)
     {
         if (placeHolder.GetComponent<RotateInPlane>().IsRotating)
         {            
@@ -160,29 +160,29 @@ public class RubiksCube : MonoBehaviour
         {
             button = Instantiate(rotateButton, new Vector3(pos, -size, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, true);
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, true);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(pos, numBlocks*size, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos, false);
+            button.GetComponent<RotateOnClick>().SetValues(Section.x, pos+posOffset, false);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(-size, pos, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
             buttons.Add(button);
 
             button = Instantiate(rotateButton, new Vector3(numBlocks*size, pos, 0), Quaternion.identity);
             button.transform.parent = this.transform;
-            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, false);
+            button.GetComponent<RotateOnClick>().SetValues(Section.y, pos, true);
             buttons.Add(button);
         }
         this.transform.localScale *= size;
         this.transform.position += new Vector3(posOffset, 0, 0);
     }
 
-    private List<GameObject> GetPieces(Section selector, int specifier, bool negative = false)
+    private List<GameObject> GetPieces(Section selector, float specifier, bool negative = false)
     {
         /*
          *      -x1 -x2 -x3 
@@ -214,7 +214,7 @@ public class RubiksCube : MonoBehaviour
         }        
         foreach (GameObject cube in rubiks)
         {
-            if (Vector3.Scale(cube.transform.localPosition, comparor) == specifiedComparor)
+            if (Vector3.Distance(Vector3.Scale(cube.transform.position, comparor), specifiedComparor) < 0.1F)
             {
                 pieces.Add(cube);
             }            
